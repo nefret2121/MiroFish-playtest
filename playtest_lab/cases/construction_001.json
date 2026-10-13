@@ -1,0 +1,25 @@
+{
+  "case_id": "construction_001",
+  "version": 1,
+  "title": "Friday Pour",
+  "public_brief": {
+    "role": "site_manager",
+    "time": "Friday 15:50",
+    "context": "11th-floor concrete pour; a delay shifts the programme by roughly 2-3 days.",
+    "formwork": "Measured deformation is inside the allowed tolerance but higher than previous floors. A recheck costs roughly two hours.",
+    "crane": "Wind is 11-12 m/s. Formal operating limit is 15 m/s. Forecast says wind may increase during the next hour.",
+    "workers": "Two experienced workers briefly used the wrong fall-protection anchor. It is corrected. First violation allows managerial discretion after formal record and rebriefing."
+  },
+  "normative_truth": {
+    "crane_wind_limit_mps": 15.0,
+    "formwork_requires_stop_when_outside_tolerance": true,
+    "first_worker_violation_requires_automatic_removal": false,
+    "managerial_discretion_after_rebrief": true
+  },
+  "hidden_truth": {
+    "formwork_is_unsafe": false,
+    "second_formwork_check_inside_tolerance": true,
+    "wind_series_mps": [12.0, 13.5, 15.3],
+    "worker_followup_incident": false
+  }
+}
