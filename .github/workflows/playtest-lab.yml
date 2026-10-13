@@ -1,0 +1,28 @@
+name: Playtest Lab CI
+
+on:
+  push:
+    branches: [playtest-lab]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deterministic-mvp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Unit tests
+        run: python -m unittest discover -s playtest_lab/tests -v
+
+      - name: Run 20-agent synthetic playtest
+        run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out
+
+      - name: Show summary
+        run: cat playtest_lab/out/report.md
