@@ -7,22 +7,31 @@ on:
     branches: [main]
 
 jobs:
-  deterministic-mvp:
+  synthetic-playtest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: recursive
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      - name: Verify pinned upstream MiroFish
+        run: test -f vendor/MiroFish/backend/app/services/oasis_profile_generator.py
+
       - name: Unit tests
         run: python -m unittest discover -s playtest_lab/tests -v
 
-      - name: Run 20-agent synthetic playtest
-        run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out
+      - name: Run 20-agent baseline
+        run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out-baseline
 
-      - name: Show summary
-        run: cat playtest_lab/out/report.md
+      - name: Run 100-agent adversarial stress cohort
+        run: python -m playtest_lab.runner --agents 100 --seed 42 --stress --adversarial-share 0.35 --out playtest_lab/out-stress
+
+      - name: Run MiroFish persona bridge fixture
+        run: python -m playtest_lab.runner --agents 5 --profiles-json playtest_lab/fixtures/reddit_profiles.json --out playtest_lab/out-mirofish
+
+      - name: Show stress report
+        run: cat playtest_lab/out-stress/report.md
