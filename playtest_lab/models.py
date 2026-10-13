@@ -14,6 +14,8 @@ class SyntheticProfile:
     curiosity: float
     authority_deference: float
     honesty: float
+    behavior_mode: str = "natural"
+    source: str = "synthetic"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -31,10 +33,21 @@ class Decision:
 
 
 @dataclass
+class Claim:
+    claim_type: str
+    text: str
+    status: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class PlaytestResult:
     case_id: str
     player: SyntheticProfile
     decisions: List[Decision]
+    claims: List[Claim]
     outcome: Dict[str, Any]
     accountability: Dict[str, Any]
     truth_hash_before: str
@@ -49,6 +62,7 @@ class PlaytestResult:
             "case_id": self.case_id,
             "player": self.player.to_dict(),
             "decisions": [d.to_dict() for d in self.decisions],
+            "claims": [c.to_dict() for c in self.claims],
             "outcome": self.outcome,
             "accountability": self.accountability,
             "truth_hash_before": self.truth_hash_before,
