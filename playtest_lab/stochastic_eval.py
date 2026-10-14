@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .gold_set import load_gold_set
-from .gold_set_eval import evaluate
 from .llm_intent_parser import LLMIntentParser
 from .llm_io import OpenAICompatibleChatClient
 
@@ -21,21 +20,27 @@ def run_repeated(gold_path: Path, repeats: int) -> Dict[str, Any]:
 
     items = load_gold_set(gold_path)
     parser = LLMIntentParser(OpenAICompatibleChatClient())
-    run_reports = []
     outputs = defaultdict(list)
+    exact_scores = []
+    action_scores = []
 
     for _ in range(repeats):
-        report = evaluate(parser, items)
-        run_reports.append(report)
+        exact = 0
+        action_ok = 0
         for item in items:
             audit = parser.parse(item.raw_text, item.scene_context, item.allowed_actions)
+            parsed = audit.parsed
+            exact += int(parsed.speech_act == item.expected_speech_act and parsed.action == item.expected_action)
+            action_ok += int(parsed.action == item.expected_action)
             outputs[item.case_id].append(
                 {
-                    "speech_act": audit.parsed.speech_act,
-                    "action": audit.parsed.action,
-                    "status": audit.parsed.status,
+                    "speech_act": parsed.speech_act,
+                    "action": parsed.action,
+                    "status": parsed.status,
                 }
             )
+        exact_scores.append(round(exact / len(items), 4))
+        action_scores.append(round(action_ok / len(items), 4))
 
     stable_items = 0
     per_item = {}
@@ -50,8 +55,6 @@ def run_repeated(gold_path: Path, repeats: int) -> Dict[str, Any]:
             "outputs": outputs[item.case_id],
         }
 
-    exact_scores = [r["exact_accuracy"] for r in run_reports]
-    action_scores = [r["action_accuracy"] for r in run_reports]
     return {
         "items": len(items),
         "repeats": repeats,
