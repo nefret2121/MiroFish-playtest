@@ -49,6 +49,30 @@ Outputs:
 python -m unittest discover -s playtest_lab/tests -v
 ```
 
+## Turkish parser benchmark
+
+A 30-item gold set built from real manual-playtest Turkish is available at:
+
+`playtest_lab/gold_sets/turkish_real_v1.jsonl`
+
+Cheap deterministic baseline:
+
+```bash
+python -m playtest_lab.gold_set_eval --mode baseline
+```
+
+Live OpenAI-compatible parser:
+
+```bash
+export LLM_API_KEY="..."
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_MODEL_NAME="gpt-5.6-sol"
+python -m playtest_lab.gold_set_eval --mode live
+```
+
+The CI workflow automatically runs the live benchmark when the three repository
+Actions secrets above are configured. Credentials must never be committed.
+
 ## MVP architecture
 
 ```text
