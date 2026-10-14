@@ -24,6 +24,11 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s playtest_lab/tests -v
 
+      - name: Run Turkish parser gold-set baseline
+        run: |
+          python -m playtest_lab.gold_set_eval --mode baseline --out playtest_lab/gold-baseline-report.json
+          cat playtest_lab/gold-baseline-report.json
+
       - name: Run 20-agent baseline
         run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out-baseline
 
