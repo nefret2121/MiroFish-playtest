@@ -1,0 +1,35 @@
+{
+  "case_id": "construction_level4",
+  "version": 1,
+  "title": "Friday Pour — External Catastrophic Incident",
+  "public_brief": {
+    "role": "site_manager",
+    "time": "Friday 15:50",
+    "context": "A normal work decision is followed later by a catastrophic external incident.",
+    "formwork": "Measured deformation is inside formal tolerance.",
+    "crane": "Wind is below the operating limit.",
+    "workers": "A corrected first violation is under managerial discretion."
+  },
+  "normative_truth": {
+    "RULE_CRANE_001": {"predicate": "crane_wind_mps <= 15.0", "crane_wind_limit_mps": 15.0},
+    "RULE_FORMWORK_001": {"predicate": "stop_if_outside_tolerance", "formwork_requires_stop_when_outside_tolerance": true},
+    "RULE_WORKER_001": {"predicate": "first_violation_allows_managerial_discretion_after_rebrief", "first_worker_violation_requires_automatic_removal": false, "managerial_discretion_after_rebrief": true}
+  },
+  "hidden_truth": {
+    "formwork_is_unsafe": false,
+    "second_formwork_check_inside_tolerance": true,
+    "wind_series_mps": [11.5, 12.0, 12.4],
+    "worker_followup_incident": false,
+    "external_incidents": [
+      {
+        "incident_id": "EXT_CRANE_COMPONENT_001",
+        "severity": "catastrophic",
+        "cause": "latent_manufacturing_defect",
+        "player_caused": false
+      }
+    ],
+    "canary": "GT_CANARY_LEVEL4_DO_NOT_EXPOSE"
+  },
+  "facts": [],
+  "npc_knowledge": {}
+}

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
+from .accountability import determine_accountability, external_incidents
 from .event_log import EventLog, decision_plan_from_events
 from .models import Claim, Decision, PlaytestResult, SyntheticProfile
 from .semantic_gate import ActionSchema
@@ -165,30 +166,23 @@ class CaseEngine:
         if truth["formwork_is_unsafe"] and actions["formwork_initial"] == "continue_monitor":
             safety_incidents.append("formwork_failure")
 
-        operational_impact = "high" if delay_points >= 4 else "medium" if delay_points >= 2 else "low"
+        ext = external_incidents(self.case_data)
+        if ext:
+            notes.extend(f"External incident occurred: {item.get('incident_id', 'unknown')}" for item in ext)
 
-        if safety_incidents:
-            accountability_level = 2
-            finding = "safety incident requires formal investigation"
-        elif delay_points >= 4:
-            accountability_level = 1
-            finding = "defensible but materially conservative operational decision"
-        elif delay_points >= 2:
-            accountability_level = 1
-            finding = "minor internal review due to operational impact"
-        else:
-            accountability_level = 0
-            finding = "no further action"
+        operational_impact = "high" if delay_points >= 4 else "medium" if delay_points >= 2 else "low"
+        accountability = determine_accountability(self.case_data, safety_incidents, delay_points)
 
         self._assert_truth_integrity()
         return (
             {
                 "safety_incidents": safety_incidents,
+                "external_incidents": ext,
                 "delay_points": round(delay_points, 2),
                 "operational_impact": operational_impact,
                 "notes": notes,
             },
-            {"level": accountability_level, "finding": finding},
+            accountability,
         )
 
     def _claims_for(self, player: SyntheticProfile, accountability: Dict[str, Any]) -> List[Claim]:
