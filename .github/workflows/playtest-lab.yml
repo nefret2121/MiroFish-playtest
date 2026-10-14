@@ -34,7 +34,7 @@ jobs:
           python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --mode baseline --out playtest_lab/gold-holdout-baseline-report.json
           cat playtest_lab/gold-holdout-baseline-report.json
 
-      - name: Run live parser development and holdout sets if secrets are configured
+      - name: Run live parser development, holdout, consistency and injection tests if secrets are configured
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
@@ -46,11 +46,17 @@ jobs:
           fi
           python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_v1.jsonl --mode live --out playtest_lab/gold-live-report.json
           python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --mode live --out playtest_lab/gold-holdout-live-report.json
+          python -m playtest_lab.stochastic_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --repeats 3 --out playtest_lab/stochastic-live-report.json
+          python -m playtest_lab.injection_eval --corpus playtest_lab/gold_sets/parser_injection_v1.jsonl --out playtest_lab/injection-live-report.json
           echo "LIVE_PARSER_RAN=1"
           echo "=== DEVELOPMENT SET ==="
           cat playtest_lab/gold-live-report.json
           echo "=== HOLDOUT SET ==="
           cat playtest_lab/gold-holdout-live-report.json
+          echo "=== STOCHASTIC CONSISTENCY ==="
+          cat playtest_lab/stochastic-live-report.json
+          echo "=== INJECTION CORPUS ==="
+          cat playtest_lab/injection-live-report.json
 
       - name: Run 20-agent baseline
         run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out-baseline
