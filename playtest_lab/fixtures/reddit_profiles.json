@@ -1,0 +1,67 @@
+[
+  {
+    "user_id": 1,
+    "username": "aylin_ops",
+    "name": "Aylin",
+    "bio": "Operations manager focused on predictable delivery and clear escalation.",
+    "persona": "Pragmatic operations manager. Values schedules but dislikes undocumented risk. Asks for evidence before stopping work.",
+    "age": 38,
+    "gender": "female",
+    "mbti": "ESTJ",
+    "country": "Türkiye",
+    "profession": "operations manager",
+    "interested_topics": ["safety", "planning"]
+  },
+  {
+    "user_id": 2,
+    "username": "mert_safety",
+    "name": "Mert",
+    "bio": "Safety specialist.",
+    "persona": "Very cautious safety specialist. Strongly prefers documented rules and extra verification when uncertainty remains.",
+    "age": 41,
+    "gender": "male",
+    "mbti": "ISTJ",
+    "country": "Türkiye",
+    "profession": "safety specialist",
+    "interested_topics": ["safety", "compliance"]
+  },
+  {
+    "user_id": 3,
+    "username": "selin_field",
+    "name": "Selin",
+    "bio": "Field engineer.",
+    "persona": "Experienced field engineer who balances production pressure with practical risk controls and values monitoring.",
+    "age": 34,
+    "gender": "female",
+    "mbti": "ISTP",
+    "country": "Türkiye",
+    "profession": "field engineer",
+    "interested_topics": ["construction", "quality"]
+  },
+  {
+    "user_id": 4,
+    "username": "can_new",
+    "name": "Can",
+    "bio": "Junior engineer.",
+    "persona": "Curious junior engineer who asks for more information and is willing to challenge assumptions but respects hierarchy.",
+    "age": 26,
+    "gender": "male",
+    "mbti": "INTP",
+    "country": "Türkiye",
+    "profession": "junior engineer",
+    "interested_topics": ["engineering", "learning"]
+  },
+  {
+    "user_id": 5,
+    "username": "riza_foreman",
+    "name": "Rıza",
+    "bio": "Construction foreman.",
+    "persona": "Production-minded foreman with long field experience. Comfortable with manageable risk and skeptical of unnecessary delay.",
+    "age": 49,
+    "gender": "male",
+    "mbti": "ESTP",
+    "country": "Türkiye",
+    "profession": "foreman",
+    "interested_topics": ["construction", "delivery"]
+  }
+]

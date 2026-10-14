@@ -1,0 +1,75 @@
+name: Playtest Lab CI
+
+on:
+  push:
+    branches: [playtest-lab]
+  pull_request:
+    branches: [main]
+
+jobs:
+  synthetic-playtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify pinned upstream MiroFish
+        run: test -f vendor/MiroFish/backend/app/services/oasis_profile_generator.py
+
+      - name: Unit tests
+        run: python -m unittest discover -s playtest_lab/tests -v
+
+      - name: Run Turkish parser development-set baseline
+        run: |
+          python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_v1.jsonl --mode baseline --out playtest_lab/gold-baseline-report.json
+          cat playtest_lab/gold-baseline-report.json
+
+      - name: Run Turkish parser holdout baseline
+        run: |
+          python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --mode baseline --out playtest_lab/gold-holdout-baseline-report.json
+          cat playtest_lab/gold-holdout-baseline-report.json
+
+      - name: Run live parser development, holdout, consistency and injection tests if secrets are configured
+        if: github.event_name == 'push'
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL_NAME: ${{ secrets.LLM_MODEL_NAME }}
+        run: |
+          if [ -z "$LLM_API_KEY" ] || [ -z "$LLM_BASE_URL" ] || [ -z "$LLM_MODEL_NAME" ]; then
+            echo "LIVE_PARSER_SKIPPED=missing_secrets"
+            exit 0
+          fi
+          python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_v1.jsonl --mode live --out playtest_lab/gold-live-report.json
+          python -m playtest_lab.gold_set_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --mode live --out playtest_lab/gold-holdout-live-report.json
+          python -m playtest_lab.stochastic_eval --gold playtest_lab/gold_sets/turkish_real_holdout_v1.jsonl --repeats 3 --out playtest_lab/stochastic-live-report.json
+          python -m playtest_lab.injection_eval --corpus playtest_lab/gold_sets/parser_injection_v1.jsonl --out playtest_lab/injection-live-report.json
+          echo "LIVE_PARSER_RAN=1"
+          echo "=== DEVELOPMENT SET ==="
+          cat playtest_lab/gold-live-report.json
+          echo "=== HOLDOUT SET ==="
+          cat playtest_lab/gold-holdout-live-report.json
+          echo "=== STOCHASTIC CONSISTENCY ==="
+          cat playtest_lab/stochastic-live-report.json
+          echo "=== INJECTION CORPUS ==="
+          cat playtest_lab/injection-live-report.json
+
+      - name: Run 20-agent baseline
+        run: python -m playtest_lab.runner --agents 20 --seed 42 --out playtest_lab/out-baseline
+
+      - name: Run 100-agent adversarial stress cohort
+        run: python -m playtest_lab.runner --agents 100 --seed 42 --stress --adversarial-share 0.35 --out playtest_lab/out-stress
+
+      - name: Run MiroFish persona bridge fixture
+        run: python -m playtest_lab.runner --agents 5 --profiles-json playtest_lab/fixtures/reddit_profiles.json --out playtest_lab/out-mirofish
+
+      - name: Verify Level 0-4 accountability suite
+        run: python -m playtest_lab.suite_runner --agents-per-case 20 --seed 42
+
+      - name: Show stress report
+        run: cat playtest_lab/out-stress/report.md
