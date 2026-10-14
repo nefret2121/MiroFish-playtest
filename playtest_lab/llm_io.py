@@ -37,7 +37,6 @@ class OpenAICompatibleChatClient:
 
     @staticmethod
     def _extract_output_text(data: Dict[str, Any]) -> str:
-        # REST Responses payloads expose text under output[].content[].
         for item in data.get("output", []):
             if not isinstance(item, dict) or item.get("type") != "message":
                 continue
@@ -47,7 +46,6 @@ class OpenAICompatibleChatClient:
                 if part.get("type") in ("output_text", "text") and isinstance(part.get("text"), str):
                     return part["text"]
 
-        # Some compatible providers may expose a convenience output_text field.
         if isinstance(data.get("output_text"), str):
             return data["output_text"]
 
@@ -58,6 +56,10 @@ class OpenAICompatibleChatClient:
             "model": self.model,
             "input": messages,
         }
+        # Intent classification is a low-complexity task. GPT-5.6 supports
+        # reasoning.effort=none, which reduces latency/cost for this benchmark.
+        if self.model and self.model.startswith("gpt-5.6"):
+            payload["reasoning"] = {"effort": "none"}
         if json_mode:
             payload["text"] = {"format": {"type": "json_object"}}
 
@@ -81,7 +83,6 @@ class OpenAICompatibleChatClient:
                 error_body = exc.read().decode("utf-8", errors="replace")
             except Exception:
                 error_body = ""
-            # Do not include request headers or credentials in the exception.
             detail = error_body[:2000] if error_body else str(exc)
             raise LLMTransportError(f"HTTP {exc.code}: {detail}") from exc
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
