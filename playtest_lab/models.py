@@ -52,6 +52,8 @@ class PlaytestResult:
     accountability: Dict[str, Any]
     truth_hash_before: str
     truth_hash_after: str
+    event_log: List[Dict[str, Any]]
+    event_log_hash: str
 
     @property
     def truth_integrity_ok(self) -> bool:
@@ -68,4 +70,6 @@ class PlaytestResult:
             "truth_hash_before": self.truth_hash_before,
             "truth_hash_after": self.truth_hash_after,
             "truth_integrity_ok": self.truth_integrity_ok,
+            "event_log": self.event_log,
+            "event_log_hash": self.event_log_hash,
         }
