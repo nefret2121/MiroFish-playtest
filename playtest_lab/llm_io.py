@@ -12,10 +12,13 @@ class LLMTransportError(RuntimeError):
 
 
 class OpenAICompatibleChatClient:
-    """Dependency-free OpenAI-compatible chat client.
+    """Dependency-free OpenAI Responses API client.
 
-    It reuses the environment variable names already documented by upstream
-    MiroFish. CI never calls a live model; tests inject a fake client.
+    Environment variable names intentionally match upstream MiroFish:
+    LLM_API_KEY, LLM_BASE_URL and LLM_MODEL_NAME.
+
+    Live CI uses OpenAI's Responses API. Unit tests inject fake clients and do
+    not require network access.
     """
 
     def __init__(
@@ -23,7 +26,7 @@ class OpenAICompatibleChatClient:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: Optional[str] = None,
-        timeout: float = 30.0,
+        timeout: float = 45.0,
     ):
         self.api_key = api_key or os.getenv("LLM_API_KEY")
         self.base_url = (base_url or os.getenv("LLM_BASE_URL") or "").rstrip("/")
@@ -32,18 +35,35 @@ class OpenAICompatibleChatClient:
         if not self.api_key or not self.base_url or not self.model:
             raise ValueError("LLM_API_KEY, LLM_BASE_URL and LLM_MODEL_NAME are required")
 
-    def _request(self, messages: List[Dict[str, str]], response_format: Optional[dict] = None) -> str:
+    @staticmethod
+    def _extract_output_text(data: Dict[str, Any]) -> str:
+        # REST Responses payloads expose text under output[].content[].
+        for item in data.get("output", []):
+            if not isinstance(item, dict) or item.get("type") != "message":
+                continue
+            for part in item.get("content", []):
+                if not isinstance(part, dict):
+                    continue
+                if part.get("type") in ("output_text", "text") and isinstance(part.get("text"), str):
+                    return part["text"]
+
+        # Some compatible providers may expose a convenience output_text field.
+        if isinstance(data.get("output_text"), str):
+            return data["output_text"]
+
+        raise LLMTransportError("Responses API returned no output text")
+
+    def _request(self, messages: List[Dict[str, str]], json_mode: bool = False) -> str:
         payload: Dict[str, Any] = {
             "model": self.model,
-            "messages": messages,
-            "temperature": 0,
+            "input": messages,
         }
-        if response_format is not None:
-            payload["response_format"] = response_format
+        if json_mode:
+            payload["text"] = {"format": {"type": "json_object"}}
 
         body = json.dumps(payload).encode("utf-8")
         request = urllib.request.Request(
-            f"{self.base_url}/chat/completions",
+            f"{self.base_url}/responses",
             data=body,
             headers={
                 "Authorization": f"Bearer {self.api_key}",
@@ -51,19 +71,26 @@ class OpenAICompatibleChatClient:
             },
             method="POST",
         )
+
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                data = json.loads(response.read().decode("utf-8"))
+                raw = response.read().decode("utf-8")
+                data = json.loads(raw)
+        except urllib.error.HTTPError as exc:
+            try:
+                error_body = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                error_body = ""
+            # Do not include request headers or credentials in the exception.
+            detail = error_body[:2000] if error_body else str(exc)
+            raise LLMTransportError(f"HTTP {exc.code}: {detail}") from exc
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise LLMTransportError(str(exc)) from exc
 
-        try:
-            return str(data["choices"][0]["message"]["content"])
-        except (KeyError, IndexError, TypeError) as exc:
-            raise LLMTransportError("invalid chat completion response") from exc
+        return self._extract_output_text(data)
 
     def complete_json(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
-        text = self._request(messages, response_format={"type": "json_object"})
+        text = self._request(messages, json_mode=True)
         try:
             value = json.loads(text)
         except json.JSONDecodeError as exc:
@@ -73,4 +100,4 @@ class OpenAICompatibleChatClient:
         return value
 
     def complete_text(self, messages: List[Dict[str, str]]) -> str:
-        return self._request(messages)
+        return self._request(messages, json_mode=False)
